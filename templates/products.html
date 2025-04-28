@@ -1,0 +1,184 @@
+{% extends 'layout.html' %}
+
+{% block title %}Products - Inventory Management System{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1><i class="bi bi-box me-2"></i>Products</h1>
+    <a href="{{ url_for('new_product') }}" class="btn btn-primary">
+        <i class="bi bi-plus-circle me-2"></i>Add New Product
+    </a>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header">
+        <div class="row g-2">
+            <div class="col-md-4">
+                <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-search"></i></span>
+                    <input type="text" id="searchInput" class="form-control" placeholder="Search products...">
+                </div>
+            </div>
+            <div class="col-md-3">
+                <select id="categoryFilter" class="form-select">
+                    <option value="">All Categories</option>
+                    {% set categories = [] %}
+                    {% for product in products %}
+                        {% if product.category and product.category not in categories %}
+                            {% set _ = categories.append(product.category) %}
+                            <option value="{{ product.category }}">{{ product.category }}</option>
+                        {% endif %}
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <select id="stockFilter" class="form-select">
+                    <option value="">All Stock Levels</option>
+                    <option value="low">Low Stock</option>
+                    <option value="out">Out of Stock</option>
+                    <option value="in">In Stock</option>
+                </select>
+            </div>
+            <div class="col-md-2 text-end">
+                <button id="exportBtn" class="btn btn-outline-secondary">
+                    <i class="bi bi-download me-1"></i>Export
+                </button>
+            </div>
+        </div>
+    </div>
+    <div class="card-body p-0">
+        {% if products %}
+            <div class="table-responsive">
+                <table class="table table-hover table-striped mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Name</th>
+                            <th>SKU</th>
+                            <th>Category</th>
+                            <th>Price</th>
+                            <th>Quantity</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="productsTable">
+                        {% for product in products %}
+                            <tr data-category="{{ product.category or 'Uncategorized' }}" 
+                                data-stock="{{ 'out' if product.quantity_in_stock == 0 else 'low' if product.quantity_in_stock <= product.reorder_level else 'in' }}">
+                                <td>
+                                    <a href="{{ url_for('product_detail', product_id=product.id) }}" class="text-decoration-none">
+                                        {{ product.name }}
+                                    </a>
+                                </td>
+                                <td>{{ product.sku }}</td>
+                                <td>{{ product.category or 'Uncategorized' }}</td>
+                                <td>${{ product.unit_price|round(2) }}</td>
+                                <td>{{ product.quantity_in_stock }}</td>
+                                <td>
+                                    {% if product.quantity_in_stock == 0 %}
+                                        <span class="badge bg-danger">Out of Stock</span>
+                                    {% elif product.quantity_in_stock <= product.reorder_level %}
+                                        <span class="badge bg-warning">Low Stock</span>
+                                    {% else %}
+                                        <span class="badge bg-success">In Stock</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="{{ url_for('edit_product', product_id=product.id) }}" class="btn btn-outline-primary action-btn" title="Edit">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                        <button type="button" class="btn btn-outline-danger action-btn" title="Delete" 
+                                                onclick="confirmDelete('{{ product.id }}', '{{ product.name }}')">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="alert alert-info m-3">
+                <i class="bi bi-info-circle me-2"></i>No products found. <a href="{{ url_for('new_product') }}">Add your first product</a>.
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirm Delete</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete <span id="deleteProductName"></span>?</p>
+                <p class="text-danger">This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form id="deleteForm" method="POST">
+                    <button type="submit" class="btn btn-danger">Delete</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Search and filter functionality
+    const searchInput = document.getElementById('searchInput');
+    const categoryFilter = document.getElementById('categoryFilter');
+    const stockFilter = document.getElementById('stockFilter');
+    const productsTable = document.getElementById('productsTable');
+    
+    function filterProducts() {
+        const searchTerm = searchInput.value.toLowerCase();
+        const categoryValue = categoryFilter.value;
+        const stockValue = stockFilter.value;
+        
+        const rows = productsTable.querySelectorAll('tr');
+        
+        rows.forEach(row => {
+            const name = row.querySelector('td:first-child').textContent.toLowerCase();
+            const category = row.getAttribute('data-category');
+            const stock = row.getAttribute('data-stock');
+            
+            const matchesSearch = name.includes(searchTerm);
+            const matchesCategory = !categoryValue || category === categoryValue;
+            const matchesStock = !stockValue || stock === stockValue;
+            
+            if (matchesSearch && matchesCategory && matchesStock) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    }
+    
+    searchInput.addEventListener('input', filterProducts);
+    categoryFilter.addEventListener('change', filterProducts);
+    stockFilter.addEventListener('change', filterProducts);
+    
+    // Export functionality
+    document.getElementById('exportBtn').addEventListener('click', function() {
+        window.location.href = '{{ url_for("api_products") }}';
+    });
+    
+    // Delete confirmation
+    window.confirmDelete = function(productId, productName) {
+        document.getElementById('deleteProductName').textContent = productName;
+        document.getElementById('deleteForm').action = `/product/delete/${productId}`;
+        const deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
+        deleteModal.show();
+    };
+});
+</script>
+{% endblock %}

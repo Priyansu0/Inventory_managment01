@@ -122,6 +122,28 @@ def edit_product(product_id):
         year=datetime.now().year
     )
 
+@app.route('/product/delete/<int:product_id>', methods=['POST'])
+def delete_product(product_id):
+    """Delete a product."""
+    product = db.session.query(Product).get_or_404(product_id)
+    
+    try:
+        # Check if product is in any purchase orders
+        purchase_items = db.session.query(PurchaseItem).filter(PurchaseItem.product_id == product_id).count()
+        if purchase_items > 0:
+            flash(f'Cannot delete product "{product.name}" because it is referenced in {purchase_items} purchase orders.', 'danger')
+            return redirect(url_for('products'))
+        
+        product_name = product.name
+        db.session.delete(product)
+        db.session.commit()
+        flash(f'Product "{product_name}" deleted successfully!', 'success')
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        flash(f'Error deleting product: {str(e)}', 'danger')
+    
+    return redirect(url_for('products'))
+
 @app.route('/suppliers')
 def suppliers():
     """Display all suppliers."""
@@ -181,6 +203,22 @@ def edit_supplier(supplier_id):
             flash(f'Error updating supplier: {str(e)}', 'danger')
     
     return render_template('supplier_form.html', supplier=supplier, year=datetime.now().year)
+
+@app.route('/supplier/toggle/<int:supplier_id>', methods=['POST'])
+def toggle_supplier_status(supplier_id):
+    """Toggle the active status of a supplier."""
+    supplier = db.session.query(Supplier).get_or_404(supplier_id)
+    
+    try:
+        supplier.active = not supplier.active
+        db.session.commit()
+        status = 'activated' if supplier.active else 'deactivated'
+        flash(f'Supplier {supplier.name} {status} successfully!', 'success')
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        flash(f'Error changing supplier status: {str(e)}', 'danger')
+    
+    return redirect(url_for('suppliers'))
 
 @app.route('/purchase_orders')
 def purchase_orders():

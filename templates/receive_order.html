@@ -1,0 +1,108 @@
+{% extends 'layout.html' %}
+
+{% block title %}Receive Order - Inventory Management System{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow">
+            <div class="card-header bg-success text-white">
+                <h4 class="mb-0">
+                    <i class="bi bi-check-circle me-2"></i>Receive Order: {{ order.order_number }}
+                </h4>
+            </div>
+            <div class="card-body">
+                <!-- Order Details -->
+                <div class="mb-4">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <h5>Order Information</h5>
+                            <p class="mb-1"><strong>Supplier:</strong> {{ order.supplier.name if order.supplier else 'N/A' }}</p>
+                            <p class="mb-1"><strong>Order Date:</strong> {{ order.order_date.strftime('%Y-%m-%d') if order.order_date else 'N/A' }}</p>
+                            <p><strong>Expected Delivery:</strong> {{ order.expected_delivery.strftime('%Y-%m-%d') if order.expected_delivery else 'N/A' }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <h5>Receiving Information</h5>
+                            <p class="mb-1"><strong>Date:</strong> {{ now().strftime('%Y-%m-%d') }}</p>
+                            <p class="mb-3"><strong>Status Change:</strong> <span class="badge bg-warning">Pending</span> → <span class="badge bg-success">Delivered</span></p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Order Items Form -->
+                <form method="POST">
+                    <h5 class="border-bottom pb-2 mb-3">Order Items</h5>
+                    
+                    <div class="table-responsive mb-4">
+                        <table class="table table-hover table-striped">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Product</th>
+                                    <th>SKU</th>
+                                    <th>Ordered Qty</th>
+                                    <th>Unit Price</th>
+                                    <th>Received Qty</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in order.items %}
+                                    <tr>
+                                        <td>{{ item.product.name if item.product else f'Product #{item.product_id}' }}</td>
+                                        <td>{{ item.product.sku if item.product else 'N/A' }}</td>
+                                        <td>{{ item.quantity }}</td>
+                                        <td>${{ item.unit_price|round(2) }}</td>
+                                        <td>
+                                            <input type="number" class="form-control form-control-sm" 
+                                                   name="item_{{ item.id }}" min="0" max="{{ item.quantity }}" 
+                                                   value="{{ item.quantity }}" required>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                            <tfoot class="table-light">
+                                <tr>
+                                    <td colspan="3" class="text-end"><strong>Total:</strong></td>
+                                    <td colspan="2">${{ order.total_amount|round(2) }}</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle me-2"></i>Receiving this order will:
+                        <ul class="mb-0 mt-2">
+                            <li>Update inventory quantities for each product</li>
+                            <li>Mark the order status as "Delivered"</li>
+                            <li>Record received quantities for each item</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between mt-4">
+                        <a href="{{ url_for('purchase_orders') }}" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left me-1"></i>Cancel
+                        </a>
+                        <button type="submit" class="btn btn-success px-4">
+                            <i class="bi bi-check-circle me-1"></i>Complete Receipt
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('form');
+    
+    form.addEventListener('submit', function(event) {
+        const confirmed = confirm('Are you sure you want to receive this order? This action cannot be undone.');
+        if (!confirmed) {
+            event.preventDefault();
+        }
+    });
+});
+</script>
+{% endblock %}

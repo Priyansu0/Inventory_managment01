@@ -1,0 +1,273 @@
+{% extends 'layout.html' %}
+
+{% block title %}Purchase Orders - Inventory Management System{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1><i class="bi bi-cart me-2"></i>Purchase Orders</h1>
+    <a href="{{ url_for('new_purchase_order') }}" class="btn btn-primary">
+        <i class="bi bi-plus-circle me-2"></i>New Purchase Order
+    </a>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header">
+        <ul class="nav nav-tabs card-header-tabs" id="orderTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="all-tab" data-bs-toggle="tab" data-bs-target="#all-orders" type="button" role="tab">
+                    All Orders
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="pending-tab" data-bs-toggle="tab" data-bs-target="#pending-orders" type="button" role="tab">
+                    Pending
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="delivered-tab" data-bs-toggle="tab" data-bs-target="#delivered-orders" type="button" role="tab">
+                    Delivered
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="cancelled-tab" data-bs-toggle="tab" data-bs-target="#cancelled-orders" type="button" role="tab">
+                    Cancelled
+                </button>
+            </li>
+        </ul>
+    </div>
+    <div class="card-body p-0">
+        <div class="tab-content" id="orderTabContent">
+            <div class="tab-pane fade show active" id="all-orders" role="tabpanel">
+                {% if orders %}
+                    <div class="table-responsive">
+                        <table class="table table-hover table-striped mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Order #</th>
+                                    <th>Supplier</th>
+                                    <th>Date</th>
+                                    <th>Expected Delivery</th>
+                                    <th>Status</th>
+                                    <th>Total</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for order in orders %}
+                                    <tr>
+                                        <td>
+                                            <a href="{{ url_for('order_detail', order_id=order.id) }}" class="text-decoration-none">
+                                                {{ order.order_number }}
+                                            </a>
+                                        </td>
+                                        <td>{{ order.supplier.name if order.supplier else 'N/A' }}</td>
+                                        <td>{{ order.order_date.strftime('%Y-%m-%d') if order.order_date else 'N/A' }}</td>
+                                        <td>{{ order.expected_delivery.strftime('%Y-%m-%d') if order.expected_delivery else 'N/A' }}</td>
+                                        <td>
+                                            <span class="badge bg-{{ 'success' if order.status == 'delivered' else 'warning' if order.status == 'pending' else 'secondary' }}">
+                                                {{ order.status }}
+                                            </span>
+                                        </td>
+                                        <td>${{ order.total_amount|round(2) }}</td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm">
+                                                {% if order.status == 'pending' %}
+                                                    <a href="{{ url_for('receive_order', order_id=order.id) }}" class="btn btn-outline-success action-btn" title="Receive">
+                                                        <i class="bi bi-check-square"></i>
+                                                    </a>
+                                                {% endif %}
+                                                <button type="button" class="btn btn-outline-secondary action-btn" title="Print">
+                                                    <i class="bi bi-printer"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="alert alert-info m-3">
+                        <i class="bi bi-info-circle me-2"></i>No purchase orders found. <a href="{{ url_for('new_purchase_order') }}">Create your first order</a>.
+                    </div>
+                {% endif %}
+            </div>
+            
+            <div class="tab-pane fade" id="pending-orders" role="tabpanel">
+                {% set pending_orders = orders|selectattr('status', 'equalto', 'pending')|list %}
+                {% if pending_orders %}
+                    <div class="table-responsive">
+                        <table class="table table-hover table-striped mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Order #</th>
+                                    <th>Supplier</th>
+                                    <th>Date</th>
+                                    <th>Expected Delivery</th>
+                                    <th>Total</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for order in pending_orders %}
+                                    <tr>
+                                        <td>
+                                            <a href="{{ url_for('order_detail', order_id=order.id) }}" class="text-decoration-none">
+                                                {{ order.order_number }}
+                                            </a>
+                                        </td>
+                                        <td>{{ order.supplier.name if order.supplier else 'N/A' }}</td>
+                                        <td>{{ order.order_date.strftime('%Y-%m-%d') if order.order_date else 'N/A' }}</td>
+                                        <td>{{ order.expected_delivery.strftime('%Y-%m-%d') if order.expected_delivery else 'N/A' }}</td>
+                                        <td>${{ order.total_amount|round(2) }}</td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm">
+                                                <a href="{{ url_for('receive_order', order_id=order.id) }}" class="btn btn-outline-success action-btn" title="Receive">
+                                                    <i class="bi bi-check-square"></i>
+                                                </a>
+                                                <button type="button" class="btn btn-outline-secondary action-btn" title="Print">
+                                                    <i class="bi bi-printer"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="alert alert-info m-3">
+                        <i class="bi bi-info-circle me-2"></i>No pending orders found.
+                    </div>
+                {% endif %}
+            </div>
+            
+            <div class="tab-pane fade" id="delivered-orders" role="tabpanel">
+                {% set delivered_orders = orders|selectattr('status', 'equalto', 'delivered')|list %}
+                {% if delivered_orders %}
+                    <div class="table-responsive">
+                        <table class="table table-hover table-striped mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Order #</th>
+                                    <th>Supplier</th>
+                                    <th>Date</th>
+                                    <th>Delivery Date</th>
+                                    <th>Total</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for order in delivered_orders %}
+                                    <tr>
+                                        <td>
+                                            <a href="{{ url_for('order_detail', order_id=order.id) }}" class="text-decoration-none">
+                                                {{ order.order_number }}
+                                            </a>
+                                        </td>
+                                        <td>{{ order.supplier.name if order.supplier else 'N/A' }}</td>
+                                        <td>{{ order.order_date.strftime('%Y-%m-%d') if order.order_date else 'N/A' }}</td>
+                                        <td>{{ order.updated_at.strftime('%Y-%m-%d') }}</td>
+                                        <td>${{ order.total_amount|round(2) }}</td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm">
+                                                <button type="button" class="btn btn-outline-secondary action-btn" title="Print">
+                                                    <i class="bi bi-printer"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="alert alert-info m-3">
+                        <i class="bi bi-info-circle me-2"></i>No delivered orders found.
+                    </div>
+                {% endif %}
+            </div>
+            
+            <div class="tab-pane fade" id="cancelled-orders" role="tabpanel">
+                {% set cancelled_orders = orders|selectattr('status', 'equalto', 'cancelled')|list %}
+                {% if cancelled_orders %}
+                    <div class="table-responsive">
+                        <table class="table table-hover table-striped mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Order #</th>
+                                    <th>Supplier</th>
+                                    <th>Date</th>
+                                    <th>Cancelled Date</th>
+                                    <th>Total</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for order in cancelled_orders %}
+                                    <tr>
+                                        <td>
+                                            <a href="{{ url_for('order_detail', order_id=order.id) }}" class="text-decoration-none">
+                                                {{ order.order_number }}
+                                            </a>
+                                        </td>
+                                        <td>{{ order.supplier.name if order.supplier else 'N/A' }}</td>
+                                        <td>{{ order.order_date.strftime('%Y-%m-%d') if order.order_date else 'N/A' }}</td>
+                                        <td>{{ order.updated_at.strftime('%Y-%m-%d') }}</td>
+                                        <td>${{ order.total_amount|round(2) }}</td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm">
+                                                <button type="button" class="btn btn-outline-secondary action-btn" title="Print">
+                                                    <i class="bi bi-printer"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="alert alert-info m-3">
+                        <i class="bi bi-info-circle me-2"></i>No cancelled orders found.
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Track active tab in URL
+    const triggerTabList = document.querySelectorAll('#orderTabs button');
+    
+    triggerTabList.forEach(function (triggerEl) {
+        const tabTrigger = new bootstrap.Tab(triggerEl);
+        
+        triggerEl.addEventListener('click', function (event) {
+            event.preventDefault();
+            tabTrigger.show();
+            
+            // Update URL with active tab
+            const tabId = this.getAttribute('id');
+            history.replaceState(null, null, `?tab=${tabId}`);
+        });
+    });
+    
+    // Set active tab based on URL parameter
+    const urlParams = new URLSearchParams(window.location.search);
+    const tab = urlParams.get('tab');
+    
+    if (tab) {
+        const tabElement = document.getElementById(tab);
+        if (tabElement) {
+            const tabTrigger = new bootstrap.Tab(tabElement);
+            tabTrigger.show();
+        }
+    }
+});
+</script>
+{% endblock %}

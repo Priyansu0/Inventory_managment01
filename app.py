@@ -5,6 +5,7 @@ Provides web interface access to the inventory system.
 
 import os
 import logging
+from datetime import datetime
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import DeclarativeBase
@@ -37,6 +38,13 @@ db.init_app(app)
 
 # Import models after db initialization to avoid circular imports
 from models import Product, Supplier, PurchaseOrder, PurchaseItem
+
+# Add utility functions to template context
+@app.context_processor
+def utility_processor():
+    return {
+        'now': datetime.now
+    }
 
 # Import routes
 import routes
