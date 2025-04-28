@@ -6,11 +6,13 @@ import logging
 import threading
 import time
 import cv2
-from pyzbar.pyzbar import decode
 from PyQt5.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, 
                            QComboBox, QMessageBox)
 from PyQt5.QtGui import QImage, QPixmap
 from PyQt5.QtCore import Qt, QTimer, pyqtSignal, pyqtSlot
+
+# Check if pyzbar is available
+from utils.qr_utils import PYZBAR_AVAILABLE, decode
 
 from sqlalchemy.exc import SQLAlchemyError
 from database import get_session
@@ -30,6 +32,7 @@ class QRScannerDialog(QDialog):
         self.capture_thread = None
         self.camera_active = False
         self.available_cameras = []
+        self.pyzbar_available = PYZBAR_AVAILABLE
         self.setupUI()
     
     def setupUI(self):
@@ -38,6 +41,17 @@ class QRScannerDialog(QDialog):
         self.setMinimumSize(640, 520)
         
         layout = QVBoxLayout(self)
+        
+        # Show warning if pyzbar is not available
+        if not self.pyzbar_available:
+            warning_label = QLabel(
+                "WARNING: QR code scanning functionality is limited because the pyzbar library is not available.\n"
+                "You can still use the camera but QR codes will not be detected."
+            )
+            warning_label.setStyleSheet("color: red; font-weight: bold; background-color: #FFEEEE; padding: 10px;")
+            warning_label.setWordWrap(True)
+            warning_label.setAlignment(Qt.AlignCenter)
+            layout.addWidget(warning_label)
         
         # Camera selection
         camera_layout = QHBoxLayout()
@@ -62,6 +76,8 @@ class QRScannerDialog(QDialog):
         
         # Scanner status
         self.status_label = QLabel("Ready to scan")
+        if not self.pyzbar_available:
+            self.status_label.setText("QR scanning is disabled - pyzbar library not available")
         self.status_label.setAlignment(Qt.AlignCenter)
         layout.addWidget(self.status_label)
         
@@ -159,31 +175,32 @@ class QRScannerDialog(QDialog):
             self.stop_camera()
             return
         
-        # Scan for QR codes
-        try:
-            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-            qr_codes = decode(gray)
-            
-            for qr in qr_codes:
-                # Draw bounding box
-                points = qr.polygon
-                if len(points) > 4:
-                    hull = cv2.convexHull(np.array([point for point in points], dtype=np.float32))
-                    cv2.polylines(frame, [hull], True, (0, 255, 0), 2)
-                else:
-                    cv2.polylines(frame, [np.array(points)], True, (0, 255, 0), 2)
+        # Scan for QR codes if pyzbar is available
+        if self.pyzbar_available:
+            try:
+                gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+                qr_codes = decode(gray)
                 
-                # Extract data
-                qr_data = qr.data.decode('utf-8')
-                
-                # Process the QR code data
-                self.process_qr_data(qr_data)
-                
-                # Display data on frame
-                cv2.putText(frame, qr_data, (qr.rect.left, qr.rect.top - 10),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
-        except Exception as e:
-            logger.error(f"Error scanning QR code: {str(e)}")
+                for qr in qr_codes:
+                    # Draw bounding box
+                    points = qr.polygon
+                    if len(points) > 4:
+                        hull = cv2.convexHull(np.array([point for point in points], dtype=np.float32))
+                        cv2.polylines(frame, [hull], True, (0, 255, 0), 2)
+                    else:
+                        cv2.polylines(frame, [np.array(points)], True, (0, 255, 0), 2)
+                    
+                    # Extract data
+                    qr_data = qr.data.decode('utf-8')
+                    
+                    # Process the QR code data
+                    self.process_qr_data(qr_data)
+                    
+                    # Display data on frame
+                    cv2.putText(frame, qr_data, (qr.rect.left, qr.rect.top - 10),
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+            except Exception as e:
+                logger.error(f"Error scanning QR code: {str(e)}")
         
         # Convert frame to QImage and display
         rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)

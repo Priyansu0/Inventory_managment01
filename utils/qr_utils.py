@@ -7,10 +7,22 @@ import logging
 import qrcode
 from PIL import Image, ImageDraw, ImageFont
 import cv2
-from pyzbar.pyzbar import decode
 import numpy as np
 
 logger = logging.getLogger(__name__)
+
+# Try to import pyzbar, but provide stub functionality if not available
+PYZBAR_AVAILABLE = False
+try:
+    from pyzbar.pyzbar import decode
+    PYZBAR_AVAILABLE = True
+except ImportError:
+    logger.warning("pyzbar library not available. QR code scanning functionality will be limited.")
+    
+    # Create a stub for the decode function
+    def decode(image):
+        logger.warning("QR scanning is not available without pyzbar library")
+        return []
 
 
 def create_qr_directory():

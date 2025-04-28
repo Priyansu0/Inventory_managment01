@@ -1,0 +1,265 @@
+{% extends 'layout.html' %}
+
+{% block title %}Dashboard - Inventory Management System{% endblock %}
+
+{% block content %}
+<h1 class="mb-4"><i class="bi bi-speedometer2 me-2"></i>Dashboard</h1>
+
+<!-- Key Metrics -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="card text-white bg-primary">
+            <div class="card-body">
+                <h5 class="card-title"><i class="bi bi-box me-2"></i>Products</h5>
+                <h2 class="card-text">{{ product_count }}</h2>
+                <p class="card-text text-white-50">Total items in inventory</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card text-white bg-success">
+            <div class="card-body">
+                <h5 class="card-title"><i class="bi bi-building me-2"></i>Suppliers</h5>
+                <h2 class="card-text">{{ supplier_count }}</h2>
+                <p class="card-text text-white-50">Active vendor relationships</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card text-white bg-info">
+            <div class="card-body">
+                <h5 class="card-title"><i class="bi bi-cart me-2"></i>Orders</h5>
+                <h2 class="card-text">{{ order_count }}</h2>
+                <p class="card-text text-white-50">Purchase orders created</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card text-white bg-warning">
+            <div class="card-body">
+                <h5 class="card-title"><i class="bi bi-currency-dollar me-2"></i>Value</h5>
+                <h2 class="card-text">${{ inventory_value|round(2) }}</h2>
+                <p class="card-text text-white-50">Total inventory value</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Low Stock Alerts -->
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header bg-danger text-white">
+                <h5 class="mb-0"><i class="bi bi-exclamation-triangle me-2"></i>Low Stock Alerts</h5>
+            </div>
+            <div class="card-body">
+                {% if low_stock_products %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Product</th>
+                                    <th>SKU</th>
+                                    <th>Current Stock</th>
+                                    <th>Reorder Level</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for product in low_stock_products %}
+                                <tr>
+                                    <td>
+                                        <a href="{{ url_for('product_detail', product_id=product.id) }}">
+                                            {{ product.name }}
+                                        </a>
+                                    </td>
+                                    <td>{{ product.sku }}</td>
+                                    <td>
+                                        <span class="badge bg-{{ 'danger' if product.quantity_in_stock == 0 else 'warning' }}">
+                                            {{ product.quantity_in_stock }}
+                                        </span>
+                                    </td>
+                                    <td>{{ product.reorder_level }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="alert alert-success mb-0">
+                        <i class="bi bi-check-circle me-2"></i>All products are above their reorder levels.
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Purchase Orders -->
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="bi bi-clock-history me-2"></i>Recent Purchase Orders</h5>
+            </div>
+            <div class="card-body">
+                {% if recent_orders %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Order #</th>
+                                    <th>Supplier</th>
+                                    <th>Date</th>
+                                    <th>Status</th>
+                                    <th>Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for order in recent_orders %}
+                                <tr>
+                                    <td>
+                                        <a href="{{ url_for('order_detail', order_id=order.id) }}">
+                                            {{ order.order_number }}
+                                        </a>
+                                    </td>
+                                    <td>{{ order.supplier.name if order.supplier else 'N/A' }}</td>
+                                    <td>{{ order.order_date.strftime('%Y-%m-%d') if order.order_date else 'N/A' }}</td>
+                                    <td>
+                                        <span class="badge bg-{{ 'success' if order.status == 'delivered' else 'warning' if order.status == 'pending' else 'secondary' }}">
+                                            {{ order.status }}
+                                        </span>
+                                    </td>
+                                    <td>${{ order.total_amount|round(2) }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="alert alert-info mb-0">
+                        <i class="bi bi-info-circle me-2"></i>No purchase orders have been created yet.
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Analytics Section -->
+<div class="row">
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header bg-dark text-white">
+                <h5 class="mb-0"><i class="bi bi-graph-up me-2"></i>Stock Level by Category</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="categoryChart" height="250"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header bg-dark text-white">
+                <h5 class="mb-0"><i class="bi bi-graph-up me-2"></i>Purchase Orders by Month</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="ordersChart" height="250"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Fetch data for charts
+document.addEventListener('DOMContentLoaded', function() {
+    // Category chart
+    fetch('/api/products')
+        .then(response => response.json())
+        .then(data => {
+            // Group by category
+            const categories = {};
+            data.forEach(product => {
+                const category = product.category || 'Uncategorized';
+                if (!categories[category]) {
+                    categories[category] = 0;
+                }
+                categories[category] += product.quantity_in_stock;
+            });
+            
+            // Create chart
+            const catCtx = document.getElementById('categoryChart').getContext('2d');
+            new Chart(catCtx, {
+                type: 'bar',
+                data: {
+                    labels: Object.keys(categories),
+                    datasets: [{
+                        label: 'Stock Quantity',
+                        data: Object.values(categories),
+                        backgroundColor: [
+                            'rgba(54, 162, 235, 0.7)',
+                            'rgba(255, 99, 132, 0.7)',
+                            'rgba(75, 192, 192, 0.7)',
+                            'rgba(255, 206, 86, 0.7)',
+                            'rgba(153, 102, 255, 0.7)',
+                            'rgba(255, 159, 64, 0.7)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        });
+    
+    // Orders chart
+    fetch('/api/orders')
+        .then(response => response.json())
+        .then(data => {
+            // Group by month
+            const months = {};
+            data.forEach(order => {
+                if (order.order_date) {
+                    const month = order.order_date.substring(0, 7); // YYYY-MM
+                    if (!months[month]) {
+                        months[month] = 0;
+                    }
+                    months[month] += 1;
+                }
+            });
+            
+            // Create chart
+            const orderCtx = document.getElementById('ordersChart').getContext('2d');
+            new Chart(orderCtx, {
+                type: 'line',
+                data: {
+                    labels: Object.keys(months).sort(),
+                    datasets: [{
+                        label: 'Orders per Month',
+                        data: Object.keys(months).sort().map(month => months[month]),
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                        tension: 0.1,
+                        fill: true
+                    }]
+                },
+                options: {
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1
+                            }
+                        }
+                    }
+                }
+            });
+        });
+});
+</script>
+{% endblock %}
