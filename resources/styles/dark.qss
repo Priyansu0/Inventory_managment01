@@ -1,0 +1,183 @@
+/* Dark Theme */
+
+QMainWindow, QDialog, QWidget {
+    background-color: #2d2d2d;
+    color: #dddddd;
+}
+
+QTabWidget::pane {
+    border: 1px solid #555555;
+    background-color: #363636;
+}
+
+QTabBar::tab {
+    background-color: #444444;
+    border: 1px solid #555555;
+    padding: 6px 12px;
+    margin-right: 2px;
+}
+
+QTabBar::tab:selected {
+    background-color: #363636;
+    border-bottom-color: #363636;
+}
+
+QTableWidget {
+    gridline-color: #555555;
+    selection-background-color: #2a5285;
+    selection-color: #ffffff;
+    alternate-background-color: #3a3a3a;
+    color: #dddddd;
+}
+
+QTableWidget::item:selected {
+    background-color: #2a5285;
+}
+
+QHeaderView::section {
+    background-color: #444444;
+    padding: 4px;
+    border: 1px solid #555555;
+    font-weight: bold;
+}
+
+QPushButton {
+    background-color: #444444;
+    border: 1px solid #555555;
+    padding: 5px 10px;
+    border-radius: 3px;
+    color: #dddddd;
+}
+
+QPushButton:hover {
+    background-color: #505050;
+}
+
+QPushButton:pressed {
+    background-color: #606060;
+}
+
+QLineEdit, QTextEdit, QSpinBox, QDoubleSpinBox, QComboBox {
+    background-color: #424242;
+    border: 1px solid #555555;
+    padding: 3px;
+    border-radius: 2px;
+    color: #dddddd;
+}
+
+QLineEdit:focus, QTextEdit:focus, QSpinBox:focus, QDoubleSpinBox:focus, QComboBox:focus {
+    border: 1px solid #2a5285;
+}
+
+QComboBox::drop-down {
+    subcontrol-origin: padding;
+    subcontrol-position: top right;
+    width: 15px;
+    border-left: 1px solid #555555;
+}
+
+QComboBox::item {
+    background-color: #424242;
+    color: #dddddd;
+}
+
+QComboBox::item:selected {
+    background-color: #2a5285;
+}
+
+QGroupBox {
+    border: 1px solid #555555;
+    border-radius: 3px;
+    margin-top: 1ex;
+    padding-top: 10px;
+}
+
+QGroupBox::title {
+    subcontrol-origin: margin;
+    padding: 0 3px;
+    color: #dddddd;
+}
+
+QStatusBar {
+    background-color: #444444;
+    color: #dddddd;
+}
+
+QToolBar {
+    background-color: #444444;
+    border-bottom: 1px solid #555555;
+}
+
+QToolBar::separator {
+    background-color: #555555;
+    width: 1px;
+    height: 20px;
+    margin: 0 5px;
+}
+
+QMenu {
+    background-color: #424242;
+    color: #dddddd;
+}
+
+QMenu::item:selected {
+    background-color: #2a5285;
+}
+
+QLabel[objectName="status_label"] {
+    padding: 5px;
+    font-weight: bold;
+}
+
+QCheckBox {
+    color: #dddddd;
+}
+
+QCheckBox::indicator {
+    background-color: #424242;
+    border: 1px solid #555555;
+    width: 13px;
+    height: 13px;
+}
+
+QCheckBox::indicator:checked {
+    background-color: #2a5285;
+}
+
+QDateEdit {
+    background-color: #424242;
+    border: 1px solid #555555;
+    color: #dddddd;
+    border-radius: 2px;
+    padding: 3px;
+}
+
+QCalendarWidget {
+    background-color: #424242;
+    color: #dddddd;
+}
+
+QCalendarWidget QToolButton {
+    color: #dddddd;
+    background-color: #444444;
+}
+
+QCalendarWidget QMenu {
+    background-color: #424242;
+    color: #dddddd;
+}
+
+QCalendarWidget QSpinBox {
+    background-color: #424242;
+    color: #dddddd;
+    border: 1px solid #555555;
+}
+
+QMessageBox {
+    background-color: #2d2d2d;
+    color: #dddddd;
+}
+
+QMessageBox QPushButton {
+    min-width: 70px;
+}
