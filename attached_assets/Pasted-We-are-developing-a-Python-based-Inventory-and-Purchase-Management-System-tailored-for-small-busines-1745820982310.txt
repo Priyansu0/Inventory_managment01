@@ -1,0 +1,37 @@
+We are developing a Python-based Inventory and Purchase Management System tailored for small businesses. The system should feature an intuitive and visually appealing Graphical User Interface (GUI) built using either Tkinter or PyQt5, incorporating a modern aesthetic with responsive layout, tabbed views, hover effects, icons, and both light and dark themes. The design should be user-friendly and visually engaging.
+The core functionalities of the system should include:
+1. Inventory Management Module
+    * Capabilities to add, edit, and delete products
+    * Set and monitor reorder levels
+    * Track stock quantities in real-time
+    * Display a clear view of all product data
+2. Purchase Order Management
+    * Create and manage purchase orders
+    * Update inventory quantities upon receipt
+    * Track pending and delivered orders efficiently
+3. Supplier Management
+    * Add, edit, and delete suppliers
+    * Link suppliers to products
+    * Store supplier contact information and assess performance
+4. QR Code Integration
+    * Automatically generate QR codes upon product or order creation
+    * Enable QR scanning via webcam to instantly fetch and edit associated data
+    * Connect physical inventory with digital records seamlessly
+5. Dashboard and Reporting Tools
+    * Show low-stock alerts and reorder notifications
+    * Calculate total inventory valuation
+    * Analyze purchase trends over time with interactive charts
+    * Allow data exports to Excel or CSV formats
+The system must be backed by a well-structured database using SQLite for development or PostgreSQL for production. The recommended schema includes tables for products, suppliers, purchase orders, and purchase items, each with appropriate foreign keys and indexing.
+Key technologies and tools to be used include:
+* Python
+* SQLite/PostgreSQL for the database
+* SQLAlchemy or Peewee for ORM
+* qrcode[pil] for generating QR codes
+* opencv-python and pyzbar for QR scanning
+* pandas for data analysis
+* matplotlib or plotly for visual reporting
+* openpyxl or csv for export functionality
+The system should follow a modular, object-oriented codebase with input validation, error handling, and an optimized UI/UX. Navigation should be smooth and the interface should allow users to switch between GUI and CLI modes if needed.
+Optionally, the application may include a web interface built using Flask and Jinja2 templates for access across devices.
+This project aims to deliver a robust, scalable, and user-centric solution for businesses to manage their inventory, suppliers, and purchasing processes effectively.
