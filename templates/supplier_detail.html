@@ -1,0 +1,222 @@
+{% extends 'layout.html' %}
+
+{% block title %}{{ supplier.name }} - Inventory Management System{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <div class="card shadow mb-4">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">
+                    <i class="bi bi-building me-2"></i>Supplier Details
+                </h4>
+                <div>
+                    <a href="{{ url_for('edit_supplier', supplier_id=supplier.id) }}" class="btn btn-light btn-sm">
+                        <i class="bi bi-pencil me-1"></i>Edit
+                    </a>
+                    <form method="POST" action="{{ url_for('toggle_supplier_status', supplier_id=supplier.id) }}" class="d-inline">
+                        <button type="submit" class="btn btn-{{ 'danger' if supplier.active else 'success' }} btn-sm" 
+                                onclick="return confirm('Are you sure you want to {{ 'deactivate' if supplier.active else 'activate' }} this supplier?')">
+                            <i class="bi bi-{{ 'x-circle' if supplier.active else 'check-circle' }} me-1"></i>
+                            {{ 'Deactivate' if supplier.active else 'Activate' }}
+                        </button>
+                    </form>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <h5 class="border-bottom pb-2 mb-3">Company Information</h5>
+                        <dl class="row">
+                            <dt class="col-sm-4">Company Name</dt>
+                            <dd class="col-sm-8">{{ supplier.name }}</dd>
+                            
+                            <dt class="col-sm-4">Status</dt>
+                            <dd class="col-sm-8">
+                                <span class="badge bg-{{ 'success' if supplier.active else 'danger' }}">
+                                    {{ 'Active' if supplier.active else 'Inactive' }}
+                                </span>
+                            </dd>
+                            
+                            <dt class="col-sm-4">Contact Person</dt>
+                            <dd class="col-sm-8">{{ supplier.contact_name or 'Not specified' }}</dd>
+                        </dl>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <h5 class="border-bottom pb-2 mb-3">Contact Details</h5>
+                        <dl class="row">
+                            <dt class="col-sm-4">Email</dt>
+                            <dd class="col-sm-8">
+                                {% if supplier.email %}
+                                    <a href="mailto:{{ supplier.email }}">{{ supplier.email }}</a>
+                                {% else %}
+                                    Not specified
+                                {% endif %}
+                            </dd>
+                            
+                            <dt class="col-sm-4">Phone</dt>
+                            <dd class="col-sm-8">
+                                {% if supplier.phone %}
+                                    <a href="tel:{{ supplier.phone }}">{{ supplier.phone }}</a>
+                                {% else %}
+                                    Not specified
+                                {% endif %}
+                            </dd>
+                            
+                            <dt class="col-sm-4">Address</dt>
+                            <dd class="col-sm-8">{{ supplier.address or 'Not specified' }}</dd>
+                        </dl>
+                    </div>
+                </div>
+                
+                {% if supplier.notes %}
+                    <h5 class="border-bottom pb-2 mb-3">Notes</h5>
+                    <div class="mb-4">
+                        {{ supplier.notes|nl2br }}
+                    </div>
+                {% endif %}
+                
+                <h5 class="border-bottom pb-2 mb-3">Supplied Products</h5>
+                {% if supplier.products %}
+                    <div class="table-responsive mb-4">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Name</th>
+                                    <th>SKU</th>
+                                    <th>Category</th>
+                                    <th>Unit Price</th>
+                                    <th>Stock</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for product in supplier.products %}
+                                    <tr>
+                                        <td>
+                                            <a href="{{ url_for('product_detail', product_id=product.id) }}">
+                                                {{ product.name }}
+                                            </a>
+                                        </td>
+                                        <td>{{ product.sku }}</td>
+                                        <td>{{ product.category or 'Uncategorized' }}</td>
+                                        <td>${{ product.unit_price|round(2) }}</td>
+                                        <td>{{ product.quantity_in_stock }}</td>
+                                        <td>
+                                            <span class="badge bg-{{ 'danger' if product.quantity_in_stock == 0 else 'warning' if product.quantity_in_stock <= product.reorder_level else 'success' }}">
+                                                {{ 'Out of Stock' if product.quantity_in_stock == 0 else 'Low Stock' if product.quantity_in_stock <= product.reorder_level else 'In Stock' }}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle me-2"></i>No products are currently assigned to this supplier.
+                    </div>
+                {% endif %}
+                
+                <div class="d-flex justify-content-between mt-4">
+                    <a href="{{ url_for('suppliers') }}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left me-1"></i>Back to Suppliers
+                    </a>
+                    
+                    <a href="{{ url_for('new_purchase_order') }}" class="btn btn-primary">
+                        <i class="bi bi-cart-plus me-1"></i>Create Purchase Order
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <!-- Order History -->
+        <div class="card shadow mb-4">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0">
+                    <i class="bi bi-clock-history me-2"></i>Order History
+                </h5>
+            </div>
+            <div class="card-body p-0">
+                {% if supplier.purchase_orders %}
+                    <div class="list-group list-group-flush">
+                        {% for order in supplier.purchase_orders|sort(attribute='order_date', reverse=True)|slice(0, 5) %}
+                            <a href="{{ url_for('order_detail', order_id=order.id) }}" class="list-group-item list-group-item-action">
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        <h6 class="mb-0">{{ order.order_number }}</h6>
+                                        <small class="text-muted">
+                                            {{ order.order_date.strftime('%Y-%m-%d') if order.order_date else 'N/A' }}
+                                        </small>
+                                    </div>
+                                    <div class="text-end">
+                                        <span class="badge bg-{{ 'success' if order.status == 'delivered' else 'warning' if order.status == 'pending' else 'secondary' }}">
+                                            {{ order.status }}
+                                        </span>
+                                        <div>${{ order.total_amount|round(2) }}</div>
+                                    </div>
+                                </div>
+                            </a>
+                        {% endfor %}
+                    </div>
+                    
+                    {% if supplier.purchase_orders|length > 5 %}
+                        <div class="text-center py-2">
+                            <a href="#" class="btn btn-sm btn-outline-secondary">View All Orders</a>
+                        </div>
+                    {% endif %}
+                {% else %}
+                    <div class="p-3 text-center">
+                        <p class="text-muted mb-0">No order history available</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Performance Metrics -->
+        <div class="card shadow">
+            <div class="card-header bg-dark text-white">
+                <h5 class="mb-0">
+                    <i class="bi bi-graph-up me-2"></i>Supplier Performance
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label class="form-label small text-muted">Order Fulfillment</label>
+                    <div class="progress mb-2" style="height: 10px;">
+                        {% set fulfillment_rate = 100 %}
+                        <div class="progress-bar bg-success" role="progressbar" style="width: {{ fulfillment_rate }}%" 
+                            aria-valuenow="{{ fulfillment_rate }}" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+                    <div class="d-flex justify-content-between small">
+                        <span>{{ fulfillment_rate }}% Orders Fulfilled</span>
+                        <span>{{ supplier.purchase_orders|selectattr('status', 'equalto', 'delivered')|list|length }}/{{ supplier.purchase_orders|length }}</span>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label small text-muted">On-Time Delivery</label>
+                    <div class="progress mb-2" style="height: 10px;">
+                        {% set on_time_rate = 100 %}
+                        <div class="progress-bar bg-info" role="progressbar" style="width: {{ on_time_rate }}%" 
+                            aria-valuenow="{{ on_time_rate }}" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+                    <div class="d-flex justify-content-between small">
+                        <span>{{ on_time_rate }}% On-Time Deliveries</span>
+                        <span>{{ supplier.purchase_orders|selectattr('status', 'equalto', 'delivered')|list|length }}/{{ supplier.purchase_orders|selectattr('status', 'equalto', 'delivered')|list|length }}</span>
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="form-label small text-muted">Total Purchase Value</label>
+                    <h3 class="mb-0">${{ supplier.purchase_orders|sum(attribute='total_amount')|round(2) }}</h3>
+                    <span class="text-muted small">Lifetime value</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

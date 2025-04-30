@@ -1,0 +1,212 @@
+{% extends 'layout.html' %}
+
+{% block title %}{{ product.name }} - Inventory Management System{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <div class="card shadow mb-4">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">
+                    <i class="bi bi-box me-2"></i>Product Details
+                </h4>
+                <div>
+                    <a href="{{ url_for('edit_product', product_id=product.id) }}" class="btn btn-light btn-sm">
+                        <i class="bi bi-pencil me-1"></i>Edit
+                    </a>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <h5 class="border-bottom pb-2 mb-3">General Information</h5>
+                        <dl class="row">
+                            <dt class="col-sm-4">Product Name</dt>
+                            <dd class="col-sm-8">{{ product.name }}</dd>
+                            
+                            <dt class="col-sm-4">SKU</dt>
+                            <dd class="col-sm-8">{{ product.sku }}</dd>
+                            
+                            <dt class="col-sm-4">Category</dt>
+                            <dd class="col-sm-8">{{ product.category or 'Uncategorized' }}</dd>
+                            
+                            <dt class="col-sm-4">Supplier</dt>
+                            <dd class="col-sm-8">
+                                {% if product.supplier %}
+                                    <a href="{{ url_for('supplier_detail', supplier_id=product.supplier.id) }}">
+                                        {{ product.supplier.name }}
+                                    </a>
+                                {% else %}
+                                    Not assigned
+                                {% endif %}
+                            </dd>
+                        </dl>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <h5 class="border-bottom pb-2 mb-3">Inventory Status</h5>
+                        <dl class="row">
+                            <dt class="col-sm-5">Unit Price</dt>
+                            <dd class="col-sm-7">${{ product.unit_price|round(2) }}</dd>
+                            
+                            <dt class="col-sm-5">Current Stock</dt>
+                            <dd class="col-sm-7">
+                                <span class="badge bg-{{ 'danger' if product.quantity_in_stock == 0 else 'warning' if product.quantity_in_stock <= product.reorder_level else 'success' }}">
+                                    {{ product.quantity_in_stock }} units
+                                </span>
+                            </dd>
+                            
+                            <dt class="col-sm-5">Reorder Level</dt>
+                            <dd class="col-sm-7">{{ product.reorder_level }} units</dd>
+                            
+                            <dt class="col-sm-5">Reorder Quantity</dt>
+                            <dd class="col-sm-7">{{ product.reorder_quantity }} units</dd>
+                            
+                            <dt class="col-sm-5">Stock Value</dt>
+                            <dd class="col-sm-7">${{ product.stock_value()|round(2) }}</dd>
+                        </dl>
+                    </div>
+                </div>
+                
+                {% if product.description %}
+                    <h5 class="border-bottom pb-2 mb-3">Product Description</h5>
+                    <div class="mb-4">
+                        {{ product.description|nl2br }}
+                    </div>
+                {% endif %}
+                
+                {% if product.qr_code %}
+                    <h5 class="border-bottom pb-2 mb-3">QR Code</h5>
+                    <div class="text-center mb-3">
+                        <img src="{{ url_for('static', filename=product.qr_code) }}" alt="Product QR Code" class="img-fluid" style="max-width: 200px;">
+                        <p class="text-muted mt-2">Scan to quickly access product information</p>
+                    </div>
+                {% endif %}
+                
+                <div class="d-flex justify-content-between mt-4">
+                    <a href="{{ url_for('products') }}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left me-1"></i>Back to Products
+                    </a>
+                    
+                    <div>
+                        {% if product.quantity_in_stock <= product.reorder_level %}
+                            <a href="{{ url_for('new_purchase_order') }}" class="btn btn-warning">
+                                <i class="bi bi-cart-plus me-1"></i>Create Purchase Order
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <!-- Purchase History -->
+        <div class="card shadow mb-4">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0">
+                    <i class="bi bi-clock-history me-2"></i>Purchase History
+                </h5>
+            </div>
+            <div class="card-body p-0">
+                {% if product.purchase_items %}
+                    <div class="list-group list-group-flush">
+                        {% for item in product.purchase_items|sort(attribute='purchase_order.order_date', reverse=True)|slice(0, 5) %}
+                            <a href="{{ url_for('order_detail', order_id=item.purchase_order.id) }}" class="list-group-item list-group-item-action">
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        <h6 class="mb-0">{{ item.purchase_order.order_number }}</h6>
+                                        <small class="text-muted">
+                                            {{ item.purchase_order.order_date.strftime('%Y-%m-%d') if item.purchase_order.order_date else 'N/A' }}
+                                        </small>
+                                    </div>
+                                    <div class="text-end">
+                                        <span class="badge bg-{{ 'success' if item.purchase_order.status == 'delivered' else 'warning' if item.purchase_order.status == 'pending' else 'secondary' }}">
+                                            {{ item.purchase_order.status }}
+                                        </span>
+                                        <div>{{ item.quantity }} units at ${{ item.unit_price|round(2) }}</div>
+                                    </div>
+                                </div>
+                            </a>
+                        {% endfor %}
+                    </div>
+                    
+                    {% if product.purchase_items|length > 5 %}
+                        <div class="text-center py-2">
+                            <a href="#" class="btn btn-sm btn-outline-secondary">View All History</a>
+                        </div>
+                    {% endif %}
+                {% else %}
+                    <div class="p-3 text-center">
+                        <p class="text-muted mb-0">No purchase history available</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Stock Trend -->
+        <div class="card shadow">
+            <div class="card-header bg-dark text-white">
+                <h5 class="mb-0">
+                    <i class="bi bi-graph-up me-2"></i>Stock Trend
+                </h5>
+            </div>
+            <div class="card-body">
+                <canvas id="stockTrendChart" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Sample data for stock trend chart
+    // In a real application, this would come from the database
+    const stockData = {
+        labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+        datasets: [{
+            label: 'Stock Level',
+            data: [{{ product.quantity_in_stock }}, {{ product.quantity_in_stock }}, {{ product.quantity_in_stock }}, {{ product.quantity_in_stock }}, {{ product.quantity_in_stock }}, {{ product.quantity_in_stock }}],
+            borderColor: '#2C7BE5',
+            backgroundColor: 'rgba(44, 123, 229, 0.1)',
+            tension: 0.4,
+            fill: true
+        }]
+    };
+    
+    // Stock trend chart
+    const ctx = document.getElementById('stockTrendChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'line',
+        data: stockData,
+        options: {
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    min: 0,
+                    grid: {
+                        drawBorder: false
+                    }
+                },
+                x: {
+                    grid: {
+                        display: false
+                    }
+                }
+            },
+            elements: {
+                point: {
+                    radius: 3
+                }
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

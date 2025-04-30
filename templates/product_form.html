@@ -5,156 +5,231 @@
 {% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-8">
-        <div class="card shadow">
-            <div class="card-header bg-primary text-white">
-                <h4 class="mb-0">
-                    <i class="bi {% if product %}bi-pencil-square{% else %}bi-plus-circle{% endif %} me-2"></i>
-                    {% if product %}Edit Product{% else %}New Product{% endif %}
-                </h4>
+<div class="card shadow mb-4">
+    <div class="card-header bg-primary text-white">
+        <h4 class="mb-0">
+            <i class="bi {% if product %}bi-pencil-square{% else %}bi-plus-circle{% endif %} me-2"></i>
+            {% if product %}Edit Product{% else %}Add New Product{% endif %}
+        </h4>
+    </div>
+    <div class="card-body">
+        <form method="POST" id="productForm" class="needs-validation" novalidate>
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label for="name" class="form-label">Product Name*</label>
+                    <input type="text" class="form-control" id="name" name="name" 
+                           value="{{ product.name if product else '' }}" required>
+                    <div class="invalid-feedback">
+                        Please provide a product name.
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <label for="sku" class="form-label">SKU*</label>
+                    <div class="input-group">
+                        <input type="text" class="form-control" id="sku" name="sku" 
+                               value="{{ product.sku if product else '' }}" required>
+                        {% if not product %}
+                            <button class="btn btn-outline-secondary" type="button" id="generateSku">
+                                Generate
+                            </button>
+                        {% endif %}
+                    </div>
+                    <div class="form-text text-muted">
+                        Unique identifier for this product
+                    </div>
+                    <div class="invalid-feedback">
+                        Please provide a SKU.
+                    </div>
+                </div>
             </div>
-            <div class="card-body">
-                <form method="POST" enctype="multipart/form-data" id="productForm">
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <label for="name" class="form-label">Product Name*</label>
-                            <input type="text" class="form-control" id="name" name="name" 
-                                   value="{{ product.name if product else '' }}" required>
-                        </div>
-                        <div class="col-md-6">
-                            <label for="sku" class="form-label">SKU (Stock Keeping Unit)*</label>
-                            <input type="text" class="form-control" id="sku" name="sku" 
-                                   value="{{ product.sku if product else '' }}" required>
-                            <div class="form-text">Unique identifier for this product</div>
+            
+            <div class="row mb-3">
+                <div class="col-md-12">
+                    <label for="description" class="form-label">Description</label>
+                    <textarea class="form-control" id="description" name="description" rows="3">{{ product.description if product else '' }}</textarea>
+                </div>
+            </div>
+            
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label for="category" class="form-label">Category</label>
+                    <input type="text" class="form-control" id="category" name="category" 
+                           list="categoryList" value="{{ product.category if product else '' }}">
+                    <datalist id="categoryList">
+                        <option value="Electronics">
+                        <option value="Office Supplies">
+                        <option value="Furniture">
+                        <option value="Raw Materials">
+                        <option value="Tools">
+                        <option value="Packaging">
+                    </datalist>
+                </div>
+                <div class="col-md-6">
+                    <label for="supplier_id" class="form-label">Supplier</label>
+                    <select class="form-select" id="supplier_id" name="supplier_id">
+                        <option value="">-- Select Supplier --</option>
+                        {% for supplier in suppliers %}
+                            <option value="{{ supplier.id }}" 
+                                    {% if product and product.supplier_id == supplier.id %}selected{% endif %}>
+                                {{ supplier.name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            
+            <div class="row mb-3">
+                <div class="col-md-3">
+                    <label for="unit_price" class="form-label">Unit Price*</label>
+                    <div class="input-group">
+                        <span class="input-group-text">$</span>
+                        <input type="number" step="0.01" min="0.01" class="form-control" id="unit_price" 
+                               name="unit_price" value="{{ product.unit_price if product else '0.00' }}" required>
+                    </div>
+                    <div class="invalid-feedback">
+                        Please provide a valid price.
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <label for="quantity_in_stock" class="form-label">Current Stock*</label>
+                    <input type="number" min="0" class="form-control" id="quantity_in_stock" 
+                           name="quantity_in_stock" value="{{ product.quantity_in_stock if product else '0' }}" required>
+                    <div class="invalid-feedback">
+                        Please provide a valid quantity.
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <label for="reorder_level" class="form-label">Reorder Level*</label>
+                    <input type="number" min="0" class="form-control" id="reorder_level" 
+                           name="reorder_level" value="{{ product.reorder_level if product else '5' }}" required>
+                    <div class="form-text text-muted">
+                        Minimum stock level
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <label for="reorder_quantity" class="form-label">Reorder Quantity*</label>
+                    <input type="number" min="1" class="form-control" id="reorder_quantity" 
+                           name="reorder_quantity" value="{{ product.reorder_quantity if product else '10' }}" required>
+                    <div class="form-text text-muted">
+                        Qty to order when restocking
+                    </div>
+                </div>
+            </div>
+            
+            {% if product and product.qr_code %}
+                <div class="row mb-3">
+                    <div class="col-md-12">
+                        <label class="form-label">QR Code</label>
+                        <div class="text-center border p-3">
+                            <img src="{{ url_for('static', filename=product.qr_code) }}" alt="Product QR Code" class="img-fluid mb-2" style="max-width: 200px;">
+                            <p class="mb-0">This QR code can be used to quickly access product information.</p>
                         </div>
                     </div>
-                    
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <label for="category" class="form-label">Category</label>
-                            <input type="text" class="form-control" id="category" name="category" 
-                                   value="{{ product.category if product else '' }}" list="categoryList">
-                            <datalist id="categoryList">
-                                {% set categories = [] %}
-                                {% for p in suppliers %}
-                                    {% if p.category and p.category not in categories %}
-                                        {% set _ = categories.append(p.category) %}
-                                        <option value="{{ p.category }}">
-                                    {% endif %}
-                                {% endfor %}
-                            </datalist>
-                        </div>
-                        <div class="col-md-6">
-                            <label for="supplier_id" class="form-label">Supplier</label>
-                            <select class="form-select" id="supplier_id" name="supplier_id">
-                                <option value="">-- Select Supplier --</option>
-                                {% for supplier in suppliers %}
-                                    <option value="{{ supplier.id }}" 
-                                            {% if product and product.supplier_id == supplier.id %}selected{% endif %}>
-                                        {{ supplier.name }}
-                                    </option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                    </div>
-                    
-                    <div class="row mb-3">
-                        <div class="col-md-4">
-                            <label for="unit_price" class="form-label">Unit Price*</label>
-                            <div class="input-group">
-                                <span class="input-group-text">$</span>
-                                <input type="number" step="0.01" min="0" class="form-control" id="unit_price" name="unit_price" 
-                                       value="{{ product.unit_price if product else '0.00' }}" required>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <label for="quantity_in_stock" class="form-label">Quantity in Stock*</label>
-                            <input type="number" min="0" class="form-control" id="quantity_in_stock" name="quantity_in_stock" 
-                                   value="{{ product.quantity_in_stock if product else '0' }}" required>
-                        </div>
-                        <div class="col-md-4">
-                            <label for="reorder_level" class="form-label">Reorder Level*</label>
-                            <input type="number" min="0" class="form-control" id="reorder_level" name="reorder_level" 
-                                   value="{{ product.reorder_level if product else '5' }}" required>
-                            <div class="form-text">Quantity at which to reorder</div>
-                        </div>
-                    </div>
-                    
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <label for="reorder_quantity" class="form-label">Reorder Quantity*</label>
-                            <input type="number" min="0" class="form-control" id="reorder_quantity" name="reorder_quantity" 
-                                   value="{{ product.reorder_quantity if product else '10' }}" required>
-                            <div class="form-text">Quantity to order when reordering</div>
-                        </div>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="description" class="form-label">Description</label>
-                        <textarea class="form-control" id="description" name="description" rows="4">{{ product.description if product else '' }}</textarea>
-                    </div>
-                    
-                    <div class="d-flex justify-content-between mt-4">
-                        <a href="{{ url_for('products') }}" class="btn btn-outline-secondary">
-                            <i class="bi bi-arrow-left me-1"></i>Cancel
-                        </a>
-                        <button type="submit" class="btn btn-primary px-4">
-                            <i class="bi bi-save me-1"></i>Save Product
+                </div>
+            {% endif %}
+            
+            <div class="d-flex justify-content-between mt-4">
+                <a href="{{ url_for('products') }}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left me-1"></i>Cancel
+                </a>
+                
+                <div>
+                    {% if product %}
+                        <button type="button" class="btn btn-danger me-2" data-bs-toggle="modal" data-bs-target="#deleteModal">
+                            <i class="bi bi-trash me-1"></i>Delete
                         </button>
-                    </div>
+                    {% endif %}
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-save me-1"></i>Save Product
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% if product %}
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirm Delete</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete this product?</p>
+                <p class="mb-0 text-danger">
+                    <i class="bi bi-exclamation-triangle me-1"></i>
+                    This action cannot be undone.
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form method="POST" action="{{ url_for('delete_product', product_id=product.id) }}">
+                    <button type="submit" class="btn btn-danger">Delete Product</button>
                 </form>
             </div>
         </div>
     </div>
 </div>
+{% endif %}
 {% endblock %}
 
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Generate SKU if creating a new product
-    {% if not product %}
-    const nameInput = document.getElementById('name');
-    const skuInput = document.getElementById('sku');
-    
-    nameInput.addEventListener('blur', function() {
-        if (nameInput.value && !skuInput.value) {
-            // Generate SKU from name
-            const words = nameInput.value.toUpperCase().split(/\s+/);
-            let sku = '';
-            
-            // Take first 3 chars of first word and first char of remaining words
-            if (words.length > 0) {
-                sku = words[0].substring(0, Math.min(3, words[0].length));
-                
-                for (let i = 1; i < Math.min(words.length, 3); i++) {
-                    if (words[i].length > 0) {
-                        sku += words[i][0];
-                    }
-                }
-                
-                // Add current date
-                const now = new Date();
-                const month = String(now.getMonth() + 1).padStart(2, '0');
-                const day = String(now.getDate()).padStart(2, '0');
-                sku += '-' + month + day + '-' + Math.floor(Math.random() * 100).toString().padStart(2, '0');
-                
-                skuInput.value = sku;
-            }
-        }
-    });
-    {% endif %}
-    
     // Form validation
     const form = document.getElementById('productForm');
+    
     form.addEventListener('submit', function(event) {
         if (!form.checkValidity()) {
             event.preventDefault();
             event.stopPropagation();
         }
+        
         form.classList.add('was-validated');
     });
+    
+    // Generate SKU
+    const generateSkuBtn = document.getElementById('generateSku');
+    if (generateSkuBtn) {
+        generateSkuBtn.addEventListener('click', function() {
+            const nameField = document.getElementById('name');
+            const categoryField = document.getElementById('category');
+            const skuField = document.getElementById('sku');
+            
+            if (nameField.value) {
+                // Create SKU from name and optional category
+                let name = nameField.value.trim().toUpperCase();
+                let category = categoryField.value ? categoryField.value.trim().toUpperCase() : '';
+                
+                // Extract first chars of each word in name (up to 3)
+                let nameInit = '';
+                name.split(/\s+/).forEach(function(word, index) {
+                    if (index < 3 && word.length > 0) {
+                        nameInit += word.charAt(0);
+                    }
+                });
+                
+                // First 2 chars of category if available
+                let catInit = '';
+                if (category) {
+                    catInit = category.substring(0, 2);
+                }
+                
+                // Random 4-digit number
+                let randomNum = Math.floor(1000 + Math.random() * 9000);
+                
+                // Combine parts
+                let sku = nameInit + (catInit ? '-' + catInit : '') + '-' + randomNum;
+                
+                skuField.value = sku;
+            } else {
+                alert('Please enter a product name first');
+            }
+        });
+    }
 });
 </script>
 {% endblock %}
