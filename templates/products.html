@@ -24,10 +24,8 @@
             <div class="col-md-2">
                 <select class="form-select" id="categoryFilter">
                     <option value="">All Categories</option>
-                    {% set categories = [] %}
                     {% for product in products %}
-                        {% if product.category and product.category not in categories %}
-                            {% do categories.append(product.category) %}
+                        {% if product.category %}  <!-- Show unique categories -->
                             <option value="{{ product.category }}">{{ product.category }}</option>
                         {% endif %}
                     {% endfor %}
@@ -114,7 +112,7 @@
                     <p class="mb-0 text-muted">Showing <span id="visibleCount">{{ products|length }}</span> products</p>
                 </div>
                 <div class="col-md-6 text-end">
-                    <span class="text-muted">Total value: $<span id="totalValue">{{ products|sum(attribute='stock_value')|round(2) }}</span></span>
+                    <span class="text-muted">Total value: $<span id="totalValue">0.00</span></span>
                 </div>
             </div>
         </div>
