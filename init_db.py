@@ -16,6 +16,16 @@ def init_database():
     """Initialize the database and create tables."""
     try:
         # Import the Flask app
+        import os
+        
+        # Force SQLite for initialization
+        if 'DATABASE_URL' in os.environ:
+            db_url = os.environ.pop('DATABASE_URL')
+            logger.info(f"Temporarily using SQLite instead of PostgreSQL for initialization")
+        else:
+            db_url = None
+        
+        # Import the Flask app with SQLite configuration
         from app import app, db
         
         # Import all models to ensure they're registered with SQLAlchemy
@@ -26,6 +36,10 @@ def init_database():
             logger.info(f"Creating database tables in {app.config['SQLALCHEMY_DATABASE_URI']}")
             db.create_all()
             logger.info("Database tables created successfully")
+        
+        # Restore PostgreSQL connection if it was removed
+        if db_url:
+            os.environ['DATABASE_URL'] = db_url
         
         return True
     except Exception as e:
