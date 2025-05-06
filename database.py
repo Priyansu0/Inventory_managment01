@@ -16,9 +16,15 @@ if os.environ.get('DATABASE_URL'):
     # PostgreSQL connection
     DB_URL = os.environ.get('DATABASE_URL')
     logger.info("Using PostgreSQL database")
+    
+    # Configure connection pool for PostgreSQL
     engine_args = {
-        "pool_pre_ping": True,
-        "pool_recycle": 300,
+        "pool_pre_ping": True,  # Check connection before using it
+        "pool_recycle": 300,    # Recycle connections after 5 minutes
+        "pool_size": 10,        # Maximum number of connections to keep
+        "max_overflow": 15,     # Maximum number of connections to create beyond pool_size
+        "pool_timeout": 30,     # Seconds to wait before giving up on getting a connection
+        "echo": False           # Set to True for debug logging
     }
 else:
     # SQLite fallback for local development

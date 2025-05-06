@@ -26,11 +26,25 @@ app = Flask(__name__)
 app.secret_key = os.environ.get("SESSION_SECRET", "dev-secret-key")
 
 # Configure database
-app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL")
-app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
-    "pool_recycle": 300,
-    "pool_pre_ping": True,
-}
+if os.environ.get("DATABASE_URL"):
+    # For PostgreSQL in production
+    app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL")
+    app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
+        "pool_recycle": 300,         # Recycle connections after 5 minutes
+        "pool_pre_ping": True,       # Check connection before using it
+        "pool_size": 10,             # Maximum number of connections to keep
+        "max_overflow": 15,          # Maximum number of connections to create beyond pool_size
+        "pool_timeout": 30,          # Seconds to wait before giving up on getting a connection
+    }
+    logger.info("Configured PostgreSQL database connection.")
+else:
+    # SQLite fallback for local development
+    db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'inventory.db')
+    app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{db_path}"
+    app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
+        "connect_args": {"check_same_thread": False}
+    }
+    logger.info(f"Configured SQLite database at {db_path}.")
 
 # Initialize SQLAlchemy
 db = SQLAlchemy(model_class=Base)
